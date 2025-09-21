@@ -2,29 +2,27 @@
 import { useEffect, useState } from "react";
 
 export default function AgendaPage() {
-  const [data, setData] = useState(null);
+  const [agenda, setAgenda] = useState(null);
+  const [announcements, setAnnouncements] = useState(null);
+  const [birthdays, setBirthdays] = useState(null);
 
   useEffect(() => {
     async function fetchData() {
       const res = await fetch("/api/agenda");
-      const json = await res.json();
-      setData(json);
+      const data = await res.json();
+
+      setAgenda(data.agenda);
+      setAnnouncements(data.announcements);
+      setBirthdays(data.birthdays);
     }
     fetchData();
   }, []);
 
-  if (!data) return <p className="p-6 text-gray-800">Loading...</p>;
-
-  const agenda = data.agenda || [];
-  const announcements = data.announcements || [];
-  const birthdays = data.birthdays || [];
-
-  if (!agenda.length) return <p className="p-6">No agenda data found.</p>;
+  if (!agenda) return <p className="p-6 text-gray-800">Loading...</p>;
 
   const headers = agenda[0];
   const rows = agenda.slice(1);
 
-  // === AGENDA: find this week's row ===
   const today = new Date();
   let thisWeek = null;
   for (const row of rows) {
@@ -48,7 +46,6 @@ export default function AgendaPage() {
     day: "numeric",
   });
 
-  // === HELPER: Format hymn links ===
   function renderCell(header, cell) {
     if (cell && cell.startsWith("http") && header.toLowerCase().includes("hymn")) {
       try {
@@ -58,7 +55,6 @@ export default function AgendaPage() {
         slug = slug.split("?")[0];
         slug = slug.replace(/-release-\d+/i, "");
         slug = slug.replace(/-\d+$/i, "");
-
         const title = slug
           .replace(/-/g, " ")
           .replace(/\b\w/g, (c) => c.toUpperCase());
@@ -80,37 +76,111 @@ export default function AgendaPage() {
     return cell;
   }
 
-  // === ANNOUNCEMENTS: filter this week's announcements ===
-  const thisWeeksAnnouncements = announcements.filter((row) => {
-    if (!row[0]) return false;
-    const date = new Date(row[0]);
-    return (
-      date.getFullYear() === today.getFullYear() &&
-      date.getMonth() === today.getMonth() &&
-      date.getDate() === thisWeek ? date.getDate() : date.getDate()
-    );
-  });
+  // ---- Announcements Fix ----
+  let announcementsForThisWeek = [];
+  if (announcements && announcements.length > 1) {
+    const rows = announcements.slice(1);
 
-  // === BIRTHDAYS: filter birthdays this week ===
-  const upcomingBirthdays = birthdays.filter((row) => {
-    if (!row[0]) return false;
-    const birthday = new Date(row[0]);
-    const thisYearBirthday = new Date(today.getFullYear(), birthday.getMonth(), birthday.getDate());
+    const matchingRows = rows.filter((r) => {
+      if (!r[0]) return false;
+      const rowDate = new Date(r[0]);
 
-    const diffDays = (thisYearBirthday - today) / (1000 * 60 * 60 * 24);
-    return diffDays >= 0 && diffDays <= 7;
-  });
+      const start = new Date(rowDate);
+      start.setDate(rowDate.getDate() - 1); // show 1 day early
 
-  // Helper: format names as "First Last"
+      const end = new Date(rowDate);
+      end.setDate(rowDate.getDate() + 6); // keep for 7 days total
+
+      return today >= start && today <= end;
+    });
+
+    if (matchingRows.length > 0) {
+      announcementsForThisWeek = matchingRows.flatMap((row, rowIdx) =>
+        row[1]
+          ? row[1].split("\n").map((line, idx) => <p key={`${rowIdx}-${idx}`}>{line}</p>)
+          : []
+      );
+    }
+  }
+
+  // ---- Birthdays ----
+  function getUpcomingBirthdays() {
+    if (!birthdays || birthdays.length <= 1) return [];
+    const twoWeeks = new Date(today);
+    twoWeeks.setDate(today.getDate() + 13);
+
+    const rows = birthdays.slice(1);
+    return rows
+      .map(([dateStr, name]) => {
+        if (!dateStr || !name) return null;
+        const [day, month] = dateStr.split(" ");
+        const monthIndex = new Date(`${month} 1, 2020`).getMonth();
+        const thisYearDate = new Date(today.getFullYear(), monthIndex, day);
+        if (thisYearDate < today) {
+          thisYearDate.setFullYear(today.getFullYear() + 1);
+        }
+        if (thisYearDate >= today && thisYearDate <= twoWeeks) {
+          return { date: thisYearDate, name };
+        }
+        return null;
+      })
+      .filter(Boolean);
+  }
+
+  const upcomingBirthdays = getUpcomingBirthdays();
+
   function formatName(name) {
-    const [last, firstMiddle] = name.split(",");
-    if (!last || !firstMiddle) return name;
-    return `${firstMiddle.trim().split(" ")[0]} ${last.trim()}`;
+    const [last, firstAndMiddle] = name.split(",").map((p) => p.trim());
+    if (!firstAndMiddle) return name;
+    const first = firstAndMiddle.split(" ")[0];
+    return `${first} ${last}`;
+  }
+
+  function renderBirthdayCalendar() {
+    if (upcomingBirthdays.length === 0)
+      return <p>No birthdays this week</p>;
+
+    const start = new Date(today);
+    start.setDate(start.getDate() - start.getDay());
+    const days = Array.from({ length: 14 }, (_, i) => {
+      const date = new Date(start);
+      date.setDate(start.getDate() + i);
+      return date;
+    });
+
+    return (
+      <div className="grid grid-cols-7 gap-2 border border-gray-300 p-2 rounded-lg">
+        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+          <div key={d} className="text-center font-semibold border-b pb-1">
+            {d}
+          </div>
+        ))}
+
+        {days.map((date) => {
+          const birthdaysForDay = upcomingBirthdays.filter(
+            (b) => b.date.toDateString() === date.toDateString()
+          );
+
+          return (
+            <div
+              key={date.toISOString()}
+              className="min-h-[100px] flex flex-col border-t pt-1 px-1 text-xs leading-tight rounded-lg"
+            >
+              <div className="font-bold">{date.getDate()}</div>
+              {birthdaysForDay.map((b, idx) => (
+                <div key={idx} className="text-blue-700 break-words">
+                  {formatName(b.name)}
+                </div>
+              ))}
+            </div>
+          );
+        })}
+      </div>
+    );
   }
 
   return (
     <main className="bg-with-overlay text-black min-h-screen mx-auto max-w-xl p-4">
-      {/* Header */}
       <h1 className="text-3xl font-bold text-center mb-2">
         Welcome to the Church of Jesus Christ of Latter-day Saints
       </h1>
@@ -119,7 +189,6 @@ export default function AgendaPage() {
       </h2>
       <p className="text-center text-black text-xl mb-6">{meetingDate}</p>
 
-      {/* Agenda */}
       <div className="space-y-3">
         {headers.slice(1).map((header, i) => {
           if (i + 1 >= thisWeek.length) return null;
@@ -136,37 +205,20 @@ export default function AgendaPage() {
       </div>
 
       {/* Announcements */}
-      {thisWeeksAnnouncements.length > 0 && (
-        <div className="mt-10">
-          <h3 className="text-2xl font-bold text-center mb-4">Announcements</h3>
-          <div className="space-y-4">
-            {thisWeeksAnnouncements.map((row, idx) => (
-              <p
-                key={idx}
-                className="whitespace-pre-line text-gray-800"
-              >
-                {row[1] || ""}
-              </p>
-            ))}
-          </div>
-        </div>
-      )}
+      <section className="mt-8">
+        <h3 className="text-2xl font-bold mb-2">Announcements</h3>
+        {announcementsForThisWeek.length > 0 ? (
+          <div className="space-y-1">{announcementsForThisWeek}</div>
+        ) : (
+          <p>No announcements for this week.</p>
+        )}
+      </section>
 
       {/* Birthdays */}
-      {upcomingBirthdays.length > 0 && (
-        <div className="mt-10">
-          <h3 className="text-2xl font-bold text-center mb-4">Birthdays This Week</h3>
-          <table className="w-full border-collapse border border-gray-400">
-            <tbody>
-              {upcomingBirthdays.map((row, idx) => (
-                <tr key={idx} className="border-t border-gray-300">
-                  <td className="p-2">{formatName(row[1] || "")}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <section className="mt-8">
+        <h3 className="text-2xl font-bold mb-2">Birthdays (Next 2 Weeks)</h3>
+        {renderBirthdayCalendar()}
+      </section>
     </main>
   );
 }

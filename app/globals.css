@@ -1,26 +1,63 @@
 @import "tailwindcss";
 
+/* Define your custom variables */
 :root {
   --background: #ffffff;
   --foreground: #171717;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Force light mode color scheme */
+html {
+  color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* Base body styles */
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* ✅ Background image with overlay */
+.bg-with-overlay {
+  position: relative;
+  background-image: url("https://www.underconsideration.com/brandnew/archives/jesus_christ_of_latter_day_saints_logo.jpg");
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+/*
+.bg-with-overlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-color: rgba(255, 255, 255, 0.7); /* white overlay */
+/*  backdrop-filter: blur(6px); /* 🔥 frosted glass blur */
+ /* -webkit-backdrop-filter: blur(6px); /* Safari support */
+  /*z-index: 0;& 
+  
+}
+  */
+
+.bg-with-overlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-color: rgba(255, 255, 255, 0.8); /* white overlay at 90% opacity */
+  z-index: 0;
+}
+
+.bg-with-overlay > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Optional: Dark mode override (if you still want to support it) */
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: #121212; /* fallback if image fails */
+    color: #ffffff;
+  }
 }

@@ -13,29 +13,26 @@ export default function AgendaPage() {
     fetchAgenda();
   }, []);
 
-  if (!agenda) return <p className="p-6 text-gray-600">Loading...</p>;
+  if (!agenda) return <p className="p-6 text-gray-800">Loading...</p>;
 
   const headers = agenda[0];
   const rows = agenda.slice(1);
 
-  // ✅ Figure out the "current week" row
+  // Find the most recent agenda whose switchDate <= today
   const today = new Date();
+  let thisWeek = null;
+  for (const row of rows) {
+    const dateCell = row[0];
+    if (!dateCell) continue;
 
-  // ✅ Find the most recent agenda whose switchDate <= today
-let thisWeek = null;
-for (const row of rows) {
-  const dateCell = row[0];
-  if (!dateCell) continue;
+    const rowDate = new Date(dateCell);
+    const switchDate = new Date(rowDate);
+    switchDate.setDate(rowDate.getDate() - 1);
 
-  const rowDate = new Date(dateCell);
-  const switchDate = new Date(rowDate);
-  switchDate.setDate(rowDate.getDate() - 1);
-
-  if (today >= switchDate) {
-    thisWeek = row; // keep updating until the latest valid one
+    if (today >= switchDate) {
+      thisWeek = row;
+    }
   }
-}
-
 
   if (!thisWeek) return <p className="p-6">No agenda found for this week.</p>;
 
@@ -45,22 +42,17 @@ for (const row of rows) {
     day: "numeric",
   });
 
-  // ✅ Render text or clean hymn link
   function renderCell(header, cell) {
     if (cell && cell.startsWith("http") && header.toLowerCase().includes("hymn")) {
       try {
         const url = new URL(cell);
         const parts = url.pathname.split("/");
 
-        // Get the last slug before query string
         let slug = parts[parts.length - 1] || parts[parts.length - 2] || "";
         slug = slug.split("?")[0];
-
-        // Strip "release-x" and trailing numbers
         slug = slug.replace(/-release-\d+/i, "");
         slug = slug.replace(/-\d+$/i, "");
 
-        // Title Case
         const title = slug
           .replace(/-/g, " ")
           .replace(/\b\w/g, (c) => c.toUpperCase());
@@ -76,39 +68,41 @@ for (const row of rows) {
           </a>
         );
       } catch {
-        return cell; // fallback if URL parsing fails
+        return cell;
       }
     }
     return cell;
   }
 
-  return (
-    <div className="bg-gray-50 min-h-screen flex items-center justify-center p-4">
-      <div className="max-w-2xl w-full p-6 bg-white shadow-lg rounded-2xl">
-        <h1 className="text-2xl font-bold text-center mb-6">
-          Tremonton 6th Ward Sacrament Meeting <br />
-          <span className="text-gray-600 text-lg">{meetingDate}</span>
-        </h1>
+      return (
+        <main className="bg-with-overlay text-black min-h-screen mx-auto max-w-xl p-4">
+          <h1 className="text-3xl font-bold text-center mb-2">
+            Welcome to the Church of Jesus Christ of Latter-day Saints
+          </h1>
 
-        <div className="space-y-3">
-          {headers.slice(1).map((header, i) => {
-            const cellValue = thisWeek[i + 1] || "";
+          <h2 className="text-xl font-semibold text-center mb-2">
+            Tremonton 6th Ward Sacrament Meeting
+          </h2>
 
-            // ✅ Skip if right-hand side is empty
-            if (!cellValue) return null;
+          <p className="text-center text-black text-xl mb-6">
+            {meetingDate}
+          </p>
 
-            return (
-              <div key={i} className="flex text-lg">
-                <span className="whitespace-nowrap">{header}</span>
-                <span className="flex-1 border-b border-dotted border-gray-400 mx-2"></span>
-                <span className="whitespace-nowrap">
-                  {renderCell(header, cellValue)}
-                </span>
-              </div>
-            );
-          })}
-        </div>
+      <div className="space-y-3">
+        {headers.slice(1).map((header, i) => {
+          const cellValue = thisWeek[i + 1] || "";
+          if (!cellValue) return null;
+          return (
+            <div key={i} className="flex text-xl text-black">
+              <span className="whitespace-nowrap">{header}</span>
+              <span className="flex-1 border-b border-dotted border-gray-400 mx-2"></span>
+              <span className="whitespace-nowrap">
+                {renderCell(header, cellValue)}
+              </span>
+            </div>
+          );
+        })}
       </div>
-    </div>
+    </main>
   );
 }

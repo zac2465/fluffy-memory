@@ -18,7 +18,7 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* ✅ Background image with overlay */
+/* ✅ Background image with subtle frosted overlay */
 .bg-with-overlay {
   position: relative;
   background-image: url("https://www.underconsideration.com/brandnew/archives/jesus_christ_of_latter_day_saints_logo.jpg");
@@ -28,36 +28,30 @@ body {
   background-attachment: fixed;
 }
 
-/*
 .bg-with-overlay::before {
   content: "";
   position: absolute;
   inset: 0;
-  background-color: rgba(255, 255, 255, 0.7); /* white overlay */
-/*  backdrop-filter: blur(6px); /* 🔥 frosted glass blur */
- /* -webkit-backdrop-filter: blur(6px); /* Safari support */
-  /*z-index: 0;& 
-  
-}
-  */
-
-.bg-with-overlay::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-color: rgba(255, 255, 255, 0.9); /* white overlay at 90% opacity */
+  /* Soft white tint with slight transparency */
+  background-color: rgba(255, 255, 255, 0.8);
+  /* ✅ Frosted glass blur effect */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  /* Subtle shading to make text readable */
+  box-shadow: inset 0 0 100px rgba(255, 255, 255, 0.2);
   z-index: 0;
 }
 
+/* Keep content above the overlay */
 .bg-with-overlay > * {
   position: relative;
   z-index: 1;
 }
 
-/* Optional: Dark mode override (if you still want to support it) */
+/* Optional: Dark mode fallback */
 @media (prefers-color-scheme: dark) {
   body {
-    background-color: #121212; /* fallback if image fails */
+    background-color: #121212;
     color: #ffffff;
   }
 }

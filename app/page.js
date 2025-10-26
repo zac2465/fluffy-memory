@@ -1,14 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
 import { hymns } from "./lib/hymns";
-
+import { marked } from "marked";
 
 export default function AgendaPage() {
   const [agenda, setAgenda] = useState(null);
   const [announcements, setAnnouncements] = useState(null);
   const [birthdays, setBirthdays] = useState(null);
 
-  // ✅ Local in-memory cache for hymn URLs
   const hymnUrlCache = {};
 
   useEffect(() => {
@@ -47,25 +46,21 @@ export default function AgendaPage() {
     day: "numeric",
   });
 
-  // ✅ This version talks to your local API route
-async function checkUrlExists(url) {
-  try {
-    const response = await fetch("/api/check-url", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url }),
-    });
-    const data = await response.json();
-    return data.ok; // 👈 Make sure this matches your API route return key
-  } catch (err) {
-    console.error("Client checkUrlExists error:", err);
-    return false;
+  async function checkUrlExists(url) {
+    try {
+      const response = await fetch("/api/check-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      const data = await response.json();
+      return data.ok;
+    } catch (err) {
+      console.error("Client checkUrlExists error:", err);
+      return false;
+    }
   }
-}
 
-
-
-  // ✅ Helper: clean up the title for URL slugs
   function slugifyTitle(title) {
     return title
       .toLowerCase()
@@ -77,89 +72,78 @@ async function checkUrlExists(url) {
       .replace(/-+/g, "-");
   }
 
-async function getHymnUrl(hymnNumber, title) {
-  if (!title) return null;
-  const num = parseInt(hymnNumber, 10);
-  const slug = slugifyTitle(title);
+  async function getHymnUrl(hymnNumber, title) {
+    if (!title) return null;
+    const num = parseInt(hymnNumber, 10);
+    const slug = slugifyTitle(title);
 
-  if (hymnUrlCache[hymnNumber]) {
-    return hymnUrlCache[hymnNumber];
-  }
-
-  let finalUrl;
-
-  if (num < 500) {
-    finalUrl = `https://www.churchofjesuschrist.org/study/manual/hymns/${slug}?lang=eng`;
-  } else {
-    const base = "https://www.churchofjesuschrist.org/study/music/hymns-for-home-and-church";
-    const releaseUrl = `${base}/${slug}-release-3?lang=eng`;
-    const normalUrl = `${base}/${slug}?lang=eng`;
-
-    // Try release version
-    const okRelease = await checkUrlExists(releaseUrl, title);
-    if (okRelease) {
-      finalUrl = releaseUrl;
-    } else {
-      // fallback
-      finalUrl = normalUrl;
+    if (hymnUrlCache[hymnNumber]) {
+      return hymnUrlCache[hymnNumber];
     }
+
+    let finalUrl;
+
+    if (num < 500) {
+      finalUrl = `https://www.churchofjesuschrist.org/study/manual/hymns/${slug}?lang=eng`;
+    } else {
+      const base =
+        "https://www.churchofjesuschrist.org/study/music/hymns-for-home-and-church";
+      const releaseUrl = `${base}/${slug}-release-3?lang=eng`;
+      const normalUrl = `${base}/${slug}?lang=eng`;
+
+      const okRelease = await checkUrlExists(releaseUrl, title);
+      if (okRelease) {
+        finalUrl = releaseUrl;
+      } else {
+        finalUrl = normalUrl;
+      }
+    }
+
+    hymnUrlCache[hymnNumber] = finalUrl;
+    return finalUrl;
   }
 
-  hymnUrlCache[hymnNumber] = finalUrl;
-  return finalUrl;
-}
+  function RenderHymnCell({ header, cell }) {
+    const hymnNum = (cell || "").toString().replace(/\D/g, "");
+    const raw = hymns[hymnNum];
 
-function RenderHymnCell({ header, cell }) {
-  const hymnNum = (cell || "").toString().replace(/\D/g, "");
-  const raw = hymns[hymnNum];
+    if (!hymnNum || !raw) return <span>{cell}</span>;
 
-  // Debug logs — keep these for one test
-  console.log(
-    `cell: ${cell} → hymnNum: ${hymnNum}`,
-    raw ? `found: ${raw.title || raw}` : "not found",
-    raw ? `url: ${raw.url || "none"}` : ""
-  );
+    let title = "";
+    let url = "";
 
-  if (!hymnNum || !raw) return <span>{cell}</span>;
+    if (typeof raw === "string") {
+      title = raw;
+    } else if (typeof raw === "object") {
+      title = raw.title;
+      url = raw.url;
+    }
 
-  let title = "";
-  let url = "";
+    if (!title) title = hymnNum;
 
-  if (typeof raw === "string") {
-    title = raw;
-  } else if (typeof raw === "object") {
-    title = raw.title;
-    url = raw.url;
+    if (url) {
+      return (
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-700 hover:underline font-medium"
+        >
+          {`${hymnNum} – ${title}`}
+        </a>
+      );
+    }
+
+    return <span>{`${hymnNum} – ${title}`}</span>;
   }
 
-  // Fallbacks
-  if (!title) title = hymnNum;
-
-  if (url) {
-    return (
-      <a
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-blue-700 hover:underline font-medium"
-      >
-        {`${hymnNum} – ${title}`}
-      </a>
-    );
+  function renderCell(header, cell) {
+    if (header.toLowerCase().includes("hymn")) {
+      return <RenderHymnCell header={header} cell={cell} />;
+    }
+    return cell;
   }
 
-  // Fallback when no URL
-  return <span>{`${hymnNum} – ${title}`}</span>;
-}
-
-function renderCell(header, cell) {
-  if (header.toLowerCase().includes("hymn")) {
-    return <RenderHymnCell header={header} cell={cell} />;
-  }
-  return cell;
-}
-
-  // ✅ Birthday calendar stays as you had it
   function renderBirthdayCalendar() {
     if (!birthdays || birthdays.length <= 1)
       return <p>No birthdays this week</p>;
@@ -168,7 +152,16 @@ function renderCell(header, cell) {
     today.setHours(0, 0, 0, 0);
 
     const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - today.getDay());
+    const dayOfWeek = today.getDay();
+
+    // ✅ Update on Saturday, but display starting Sunday
+    if (dayOfWeek === 6) {
+      // If today is Saturday, start tomorrow (Sunday)
+      startOfWeek.setDate(today.getDate() + 1);
+    } else {
+      // Otherwise, start on the most recent Sunday
+      startOfWeek.setDate(today.getDate() - dayOfWeek);
+    }
     startOfWeek.setHours(0, 0, 0, 0);
 
     const endOfRange = new Date(startOfWeek);
@@ -203,39 +196,46 @@ function renderCell(header, cell) {
       .filter(Boolean);
 
     return (
-      <div className="grid grid-cols-7 gap-2 bg-transparent">
-        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
-          <div
-            key={d}
-            className="text-center font-semibold border-b border-gray-300 pb-1 text-sm"
-          >
-            {d}
-          </div>
-        ))}
+      <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent">
+        <div className="grid grid-cols-7 divide-x divide-y divide-gray-300 min-w-[900px] bg-white/80 backdrop-blur-sm rounded-xl shadow-md text-sm">
+          {Array.from({ length: 14 }, (_, i) => {
+            const date = new Date(startOfWeek);
+            date.setDate(startOfWeek.getDate() + i);
+            date.setHours(0, 0, 0, 0);
 
-        {Array.from({ length: 14 }, (_, i) => {
-          const date = new Date(startOfWeek);
-          date.setDate(startOfWeek.getDate() + i);
-          date.setHours(0, 0, 0, 0);
+            const dayBirthdays = upcoming.filter(
+              (b) => b.date.toDateString() === date.toDateString()
+            );
 
-          const dayBirthdays = upcoming.filter(
-            (b) => b.date.toDateString() === date.toDateString()
-          );
-
-          return (
-            <div
-              key={i}
-              className="min-h-[80px] flex flex-col border-t border-gray-200 pt-1 text-xs"
-            >
-              <div className="font-bold">{date.getDate()}</div>
-              {dayBirthdays.map((b, idx) => (
-                <div key={idx} className="text-blue-700 truncate" title={b.name}>
-                  {b.name}
+            return (
+              <div
+                key={i}
+                className="flex flex-col items-start calendar-cell p-2 min-h-[90px]"              >
+                <div className="text-center font-semibold text-gray-800 w-full border-b border-gray-100 pb-1 mb-1 text-xs">
+                  {date.toLocaleDateString(undefined, {
+                    weekday: "short",
+                    day: "numeric",
+                  })}
                 </div>
-              ))}
-            </div>
-          );
-        })}
+
+                <div className="flex flex-col gap-1 w-full">
+                  {dayBirthdays.length > 0 ? (
+                    dayBirthdays.map((b, idx) => (
+                      <div
+                        key={idx}
+                        className="text-gray-000 text-xs whitespace-normal break-words leading-tight"
+                      >
+                        {b.name}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-gray-400 text-xs italic">—</div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     );
   }
@@ -252,15 +252,27 @@ function renderCell(header, cell) {
         <p className="text-gray-700 text-base">{meetingDate}</p>
       </header>
 
-      <section className="p-4 space-y-2 bg-transparent">
+      {/* ✅ Responsive Agenda layout */}
+      <section className="p-4 space-y-4 bg-transparent">
         {headers.slice(1).map((header, i) => {
           const cell = thisWeek[i + 1];
           if (!cell) return null;
+
           return (
-            <div key={i} className="flex text-base">
-              <span className="font-medium w-40">{header}</span>
-              <span className="flex-1 border-b border-dotted border-gray-400 mx-2"></span>
-              <span>{renderCell(header, cell)}</span>
+            <div
+              key={i}
+              className="text-base sm:text-lg leading-snug py-1"
+            >
+              {/* Top line: label + dots */}
+              <div className="flex items-center justify-between">
+                <span className="font-medium text-gray-900">{header}</span>
+                <div className="flex-1 mx-2 dotted-line"></div>
+              </div>
+
+              {/* Bottom line: right-aligned value (hymn link, name, etc.) */}
+              <div className="text-right mt-1 text-gray-800 break-words">
+                {renderCell(header, cell)}
+              </div>
             </div>
           );
         })}
@@ -274,35 +286,56 @@ function renderCell(header, cell) {
               return <p>No announcements for this week.</p>;
             }
 
-            // Extract date + announcement rows
-            const rows = announcements.slice(1); // skip header row
+            const rows = announcements.slice(1);
             const today = new Date();
             today.setHours(0, 0, 0, 0);
 
-            // find the one matching this week's agenda
             const thisWeekRow = rows.find(([dateStr]) => {
               if (!dateStr) return false;
               const d = new Date(dateStr);
               const diff = today - d;
-              // Match the same logic as your agenda (Sunday–Saturday window)
-              return diff >= -86400000 && diff < 6 * 86400000; // within ±6 days
+              return diff >= -86400000 && diff < 6 * 86400000;
             });
 
             const announcementText = thisWeekRow?.[1]?.trim();
+            if (!announcementText) {
+              return <p>No announcements for this week.</p>;
+            }
 
-            return announcementText ? (
-              <p className="text-gray-800 whitespace-pre-line">{announcementText}</p>
-            ) : (
-              <p>No announcements for this week.</p>
+            const html = marked.parse(announcementText, { breaks: true });
+
+            return (
+              <div
+                className="prose prose-sm sm:prose-base max-w-none text-gray-800 
+                          prose-ul:list-disc prose-ul:pl-6 prose-li:my-2
+                          prose-li:marker:text-blue-800 prose-li:marker:font-bold
+                          prose-strong:font-semibold
+                          prose-a:text-blue-800 prose-a:underline hover:prose-a:text-blue-900"
+                dangerouslySetInnerHTML={{ __html: html }}
+              />
             );
           })()}
         </div>
       </section>
 
+
+
+
+
       <section>
-        <h3 className="text-xl font-semibold mb-2">Birthdays (Next 2 Weeks)</h3>
+        <h3 className="text-xl font-semibold mb-2">Birthdays (Scroll to see more)</h3>
         {renderBirthdayCalendar()}
       </section>
+
+{/*ward calendar button
+        <a
+          href="/calendar"
+          className="inline-block mt-6 mb-4 bg-blue-100 text-blue-800 px-6 py-2 rounded-lg border border-blue-300 hover:bg-blue-200 hover:text-blue-900 transition duration-200"
+        >
+          View Ward Calendar
+        </a>
+        */}
+      
     </main>
   );
 }

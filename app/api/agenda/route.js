@@ -3,7 +3,6 @@ export async function GET() {
     const spreadsheetId = "1qZe_O7wK7ZD3xBprskp0ds9Oin0lR3na-xTi4NOQ2K0";
     const apiKey = process.env.GOOGLE_API_KEY;
 
-    // --- Fetch all 3 sheets in parallel ---
     const [agendaRes, announcementsRes, birthdaysRes] = await Promise.all([
       fetch(
         `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/agenda!A1:Z500?key=${apiKey}`
@@ -14,6 +13,9 @@ export async function GET() {
       fetch(
         `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/birthday!A1:B500?key=${apiKey}`
       ),
+      fetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Calendar!A1:E500?key=${apiKey}`
+      ),
     ]);
 
     const [agendaData, announcementsData, birthdaysData] = await Promise.all([
@@ -21,6 +23,11 @@ export async function GET() {
       announcementsRes.json(),
       birthdaysRes.json(),
     ]);
+
+    // DEBUGGING: Log what we got back from Google Sheets
+    console.log("Agenda rows:", agendaData.values?.length);
+    console.log("Announcements rows:", announcementsData.values?.length);
+    console.log("Birthdays rows:", birthdaysData.values?.length);
 
     return new Response(
       JSON.stringify({
@@ -33,6 +40,7 @@ export async function GET() {
       }
     );
   } catch (err) {
+    console.error("Error fetching sheets:", err.message);
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
       headers: { "Content-Type": "application/json" },

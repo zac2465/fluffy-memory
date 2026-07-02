@@ -1386,7 +1386,7 @@ export const hymns = {
     url: "https://www.churchofjesuschrist.org/study/music/hymns-for-home-and-church/his-eye-is-on-the-sparrow?lang=eng"
   },
   "1001": {
-    title: "Come, Thou Fount of Every Blessing",
+    title: "Come, Thou Fount of Every Blessing", 
     url: "https://www.churchofjesuschrist.org/study/music/hymns-for-home-and-church/come-thou-fount-of-every-blessing?lang=eng"
   },
   "1002": {
@@ -1589,6 +1589,50 @@ export const hymns = {
     title: "This Day Is a Good Day, Lord",
     url: "https://www.churchofjesuschrist.org/study/music/hymns-for-home-and-church/this-day-is-a-good-day-lord?lang=eng"
   },
+  "1052": {
+    title: "Joyfully Bound",
+    url: "https://www.churchofjesuschrist.org/study/music/hymns-for-home-and-church/joyfully-bound?lang=eng"
+  },
+  "1053": {
+    title: "My Covenants",
+    url: "https://www.churchofjesuschrist.org/study/music/hymns-for-home-and-church/my-covenants?lang=eng"
+  },
+  "1054": {
+    title: "When I Am Baptized",
+    url: "https://www.churchofjesuschrist.org/study/music/hymns-for-home-and-church/when-i-am-baptized?lang=eng"
+  },
+  "1055": {
+    title: "The Power of the Holy Ghost",
+    url: "https://www.churchofjesuschrist.org/study/music/hymns-for-home-and-church/the-power-of-the-holy-ghost?lang=eng"
+  },
+  "1056": {
+    title: "Elijah and the Still, Small Voice",
+    url: "https://www.churchofjesuschrist.org/study/music/hymns-for-home-and-church/elijah-and-the-still-small-voice?lang=eng"
+  },
+  "1057": {
+    title: "Jesus Is My Shepherd",
+    url: "https://www.churchofjesuschrist.org/study/music/hymns-for-home-and-church/jesus-is-my-shepherd?lang=eng"
+  },
+  "1058": {
+    title: "My Song in the Night",
+    url: "https://www.churchofjesuschrist.org/study/music/hymns-for-home-and-church/my-song-in-the-night?lang=eng"
+  },
+  "1059": {
+    title: "This Is My Father’s World",
+    url: "https://www.churchofjesuschrist.org/study/music/hymns-for-home-and-church/this-is-my-father-s-world?lang=eng"
+  },
+  "1060": {
+    title: "Build an Ark",
+    url: "https://www.churchofjesuschrist.org/study/music/hymns-for-home-and-church/build-an-ark?lang=eng"
+  },
+  "1061": {
+    title: "Love Will Bless Our Home",
+    url: "https://www.churchofjesuschrist.org/study/music/hymns-for-home-and-church/love-will-bless-our-home?lang=eng"
+  },
+  "1062": {
+    title: "Lord, Accept Our Humble Fast",
+    url: "https://www.churchofjesuschrist.org/study/music/hymns-for-home-and-church/lord-accept-our-humble-fast?lang=eng"
+  },
   "1201": {
     title: "Hail the Day That Sees Him Rise",
     url: "https://www.churchofjesuschrist.org/study/music/hymns-for-home-and-church/hail-the-day-that-sees-him-rise?lang=eng"
@@ -1624,5 +1668,9 @@ export const hymns = {
   "1209": {
     title: "Little Baby in a Manger",
     url: "https://www.churchofjesuschrist.org/study/music/hymns-for-home-and-church/little-baby-in-a-manger?lang=eng"
+  },
+  "1210": {
+    title: "Long Ago, Within a Garden",
+    url: "https://www.churchofjesuschrist.org/study/music/hymns-for-home-and-church/long-ago-within-a-garden?lang=eng"
   }
 };
